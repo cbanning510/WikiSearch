@@ -3,8 +3,10 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   StyleSheet,
+  Keyboard,
   View,
   TouchableOpacity,
+  Platform,
   TextInput,
   Text,
   StatusBar,
@@ -17,6 +19,31 @@ import {stringLiterals} from '../constants';
 class Home extends React.Component {
   state = {
     searchText: '',
+    keyboardShown: false,
+  };
+
+  componentDidMount() {
+    this.keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      this._keyboardDidShow,
+    );
+    this.keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      this._keyboardDidHide,
+    );
+  }
+
+  componentWillUnmount() {
+    this.keyboardDidShowListener.remove();
+    this.keyboardDidHideListener.remove();
+  }
+
+  _keyboardDidShow = () => {
+    this.setState({keyboardShown: true});
+  };
+
+  _keyboardDidHide = () => {
+    this.setState({keyboardShown: false});
   };
 
   handleChangeText = text => {
@@ -30,17 +57,22 @@ class Home extends React.Component {
       <>
         <SafeAreaView style={styles.homeSafeArea}>
           <StatusBar barStyle="dark-content" />
-          <KeyboardAvoidingView behavior="padding" enabled>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : null}
+            enabled>
             <View style={styles.homeContainer}>
               <AppTitle />
-              <WikiLogo />
+              {Platform.OS === 'ios' ? (
+                <WikiLogo />
+              ) : (
+                <WikiLogo keyStatus={this.state.keyboardShown ? true : false} />
+              )}
               <TextInput
                 style={styles.inputText}
                 onChangeText={this.handleChangeText}
                 value={this.state.searchText}
                 placeholder={stringLiterals.SEARCH_PROMPT}
-                textAlignVertical="top"
-                multiline={true}
+                onSubmitEditing={Keyboard.dismiss}
               />
               {this.state.error && (
                 <Text style={styles.error}>{stringLiterals.ERROR_PROMPT}</Text>
@@ -72,7 +104,6 @@ export default Home;
 const styles = StyleSheet.create({
   error: {
     color: 'red',
-    margin: 6,
   },
   inputText: {
     height: 50,
